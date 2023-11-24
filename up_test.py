@@ -51,7 +51,7 @@ up_model.to(device)
 
 tensor_to_pillow = transforms.ToPILImage(mode="RGB")
 
-up_model.load_state_dict(torch.load("best_upscaler_weights.pth"))
+up_model.load_state_dict(torch.load("best_upscaler_weights_upsampling.pth"))
 
 with torch.no_grad():
     count = 1

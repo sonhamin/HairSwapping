@@ -98,7 +98,7 @@ class UNet(nn.Module):
                  retain_dim=False):
         super().__init__()
         self.encoder = Encoder(enc_chs)
-        self.decoder = Decoder(dec_chs)
+        self.decoder = Decoder2(dec_chs)
         # self.head = Block(dec_chs[-1], num_class, paddings=1)
         self.retain_dim = retain_dim
 

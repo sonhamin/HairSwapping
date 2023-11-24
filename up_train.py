@@ -30,14 +30,8 @@ x_train, x_test, y_train, y_test = train_test_split(small_size_img, full_size_im
                                                     test_size=0.2, random_state=42)
 
 transform_train = transforms.Compose([
-    transforms.RandomAffine(degrees=[-10, 10], translate=[0.00, 0.08], scale=[0.65, 1.00], shear=5,
-                            fill=(255, 255, 255)),
-    transforms.ToTensor(),
-    transforms.RandomErasing(scale=[0.05, 0.08], ratio=[0.02, 0.05], p=0.5),
-])
-
-transform_train2 = transforms.Compose([
-    transforms.RandomAffine(degrees=[5, 10], translate=[0.10, 0.25], scale=[0.80, 1.20], shear=0, fill=(255, 255, 255)),
+    transforms.RandomHorizontalFlip(),
+    upscale_util.MyRotateTransform(angles=(0, 90, 180, 270)),
     transforms.ToTensor(),
 ])
 
@@ -61,13 +55,15 @@ optimizer = torch.optim.SGD(up_model.parameters(), lr=0.0005, momentum=0.9)
 
 start_epoch = 1
 best_test_loss = math.inf
+
+"""
 try:
     up_model.load_state_dict(torch.load("best_upscaler_weights.pth"))
     best_test_loss = 0.046
     start_epoch = 3
 except FileNotFoundError as e:
     print(str(e))
-
+"""
 
 tensor_to_pillow = transforms.ToPILImage(mode="RGB")
 

@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.transforms.functional as TF
 import numpy as np
 import random
 from PIL import Image
@@ -24,3 +25,11 @@ class UpDataSet(Dataset):
             full = self.img_transform(full)
         return small, full
 
+
+class MyRotateTransform:
+    def __init__(self, angles):
+        self.angles = angles
+
+    def __call__(self, x):
+        angle = random.choice(self.angles)
+        return TF.rotate(x, angle)
