@@ -5,7 +5,7 @@ import numpy as np
 import random
 from PIL import Image
 from torch.utils.data import Dataset
-
+from torchvision.models import vgg19
 
 class UpDataSet(Dataset):
     def __init__(self, small_img, full_img, img_transform=None):
@@ -33,3 +33,18 @@ class MyRotateTransform:
     def __call__(self, x):
         angle = random.choice(self.angles)
         return TF.rotate(x, angle)
+
+
+class Vgg19(nn.Module):
+    def __init__(self):
+        super(Vgg19, self).__init__()
+        features = list(vgg19(pretrained=True).features)[:36]
+        self.features = nn.ModuleList(features).eval()
+
+    def forward(self, x):
+        results = []
+        for ii, model in enumerate(self.features):
+            x = model(x)
+            if ii in {2, 7, 12, 21, 30}:
+                results.append(x)
+        return results

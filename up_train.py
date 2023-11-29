@@ -40,7 +40,7 @@ transform_test = transforms.Compose([
 ])
 
 training_set = upscale_util.UpDataSet(x_train, y_train, img_transform=transform_train)
-train_loader = torch.utils.data.DataLoader(training_set, batch_size=16, shuffle=True, num_workers=0)
+train_loader = torch.utils.data.DataLoader(training_set, batch_size=12, shuffle=True, num_workers=0)
 
 test_set = upscale_util.UpDataSet(x_test, y_test, img_transform=transform_test)
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=16, shuffle=True, num_workers=0)
@@ -48,25 +48,27 @@ test_loader = torch.utils.data.DataLoader(test_set, batch_size=16, shuffle=True,
 up_model = upscaler.UNet()
 up_model.to(device)
 
+perceptual_model = upscale_util.Vgg19()
+perceptual_model.to(device)
+
 criterion = torch.nn.MSELoss()
+criterion_p = torch.nn.MSELoss()
 # optimizer = torch.optim.Adam(up_model.parameters(), lr=0.0005, betas=(0.5, 0.999))
 optimizer = torch.optim.SGD(up_model.parameters(), lr=0.0005, momentum=0.9)
-
 
 start_epoch = 1
 best_test_loss = math.inf
 
-"""
+# """
 try:
-    up_model.load_state_dict(torch.load("best_upscaler_weights.pth"))
-    best_test_loss = 0.046
-    start_epoch = 3
+    up_model.load_state_dict(torch.load("best_upscaler_weights_perceptual.pth"))
+    best_test_loss = 0.14
+    start_epoch = 2
 except FileNotFoundError as e:
     print(str(e))
-"""
+# """
 
 tensor_to_pillow = transforms.ToPILImage(mode="RGB")
-
 
 num_epoch = 10
 print("{} batches feeding in!".format(len(train_loader)))
@@ -81,8 +83,16 @@ for epoch in range(start_epoch, num_epoch + 1):
         y = y.to(device)
         inferences = up_model(x)
 
+        fake_feature = perceptual_model(inferences)
+        real_feature = perceptual_model(y)
+
+        loss_p = 0
+        for i in range(5):
+            loss_p += criterion_p(fake_feature[i], real_feature[i])
+
         optimizer.zero_grad()
-        cur_loss = criterion(inferences, y)
+        mse_loss = criterion(inferences, y)
+        cur_loss = mse_loss + loss_p/10
         cur_loss.backward(retain_graph=True)
         optimizer.step()
 
@@ -105,7 +115,7 @@ for epoch in range(start_epoch, num_epoch + 1):
         test_loss /= len(test_loader)
     if test_loss < best_test_loss:
         best_test_loss = test_loss
-        torch.save(up_model.state_dict(), f="best_upscaler_weights.pth")
+        torch.save(up_model.state_dict(), f="best_upscaler_weights_perceptual.pth")
 
     try:
         if epoch % 5 == 0 or epoch == 1:
@@ -123,7 +133,7 @@ for epoch in range(start_epoch, num_epoch + 1):
         print(str(e))
     print("Epoch {0}: test_loss: {1}, best_loss: {2}".format(epoch, test_loss, best_test_loss))
 
-torch.save(up_model.state_dict(), f="final_upscaler_weights.pth")
+torch.save(up_model.state_dict(), f="final_upscaler_weights_perceptual.pth")
 
 """
 my_encoder = upscaler.Encoder()
